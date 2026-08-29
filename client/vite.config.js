@@ -48,7 +48,10 @@ export default defineConfig(({ mode }) => ({
         // signal still has to work. The trade is that splitting buys first paint and
         // not install size — 107 entries / 17,795 KiB before any of it, 220 /
         // 17,855 KiB now.
-        globPatterns: ['**/*.{js,css,html,svg,png,woff,woff2,ttf}'],
+        // mjs added for the pdf.js worker (`?url` asset import) —
+        // without it the worker is not precached and in-app PDF viewing breaks
+        // exactly when it matters, offline.
+        globPatterns: ['**/*.{js,mjs,css,html,svg,png,woff,woff2,ttf}'],
         // build:analyze drops a treemap next to the app; it must never end up in a
         // precache manifest if someone ships that build by accident.
         globIgnores: ['**/stats.html'],

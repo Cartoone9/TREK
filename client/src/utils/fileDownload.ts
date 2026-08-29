@@ -49,8 +49,11 @@ function isIosStandalone(): boolean {
  * straight to the cache; when online we fetch live and only fall back if the
  * network actually fails — which also covers flaky links where navigator.onLine
  * still reports true ("sometimes it works, sometimes it doesn't").
+ *
+ * Exported for the in-app PDF viewer, which needs the same
+ * server-then-cache resolution without any of the open/download behaviour.
  */
-async function getFileBlob(url: string): Promise<Blob> {
+export async function getFileBlob(url: string): Promise<Blob> {
   assertRelativeUrl(url)
   if (typeof navigator !== 'undefined' && isEffectivelyOffline()) {
     const cached = await getCachedBlob(url)

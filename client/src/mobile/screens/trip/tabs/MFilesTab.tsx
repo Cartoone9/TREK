@@ -12,6 +12,7 @@ import MFileMenuSheet from './MFileMenuSheet'
 import MFileLinkSheet from './MFileLinkSheet'
 import MFileTrashSheet from './MFileTrashSheet'
 import MFileLightbox from './MFileLightbox'
+import MPdfLightbox from './MPdfLightbox'
 import {
   FILE_FILTERS, buildFileLinkLabels, formatFileDate, getFileTypeMeta,
   matchesFileFilter, sortFilesStarredFirst, type FileFilterId,
@@ -38,6 +39,9 @@ export default function MFilesTab({ planner, shell }: MTabScreenProps) {
   const [linkFileId, setLinkFileId] = useState<number | null>(null)
   const [trashOpen, setTrashOpen] = useState(false)
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null)
+  // PDFs render in-app (MPdfLightbox) — openFile() would navigate
+  // the standalone WebView to the file and re-boot the SPA on return.
+  const [pdfFile, setPdfFile] = useState<TripFile | null>(null)
   const [uploading, setUploading] = useState(false)
 
   const menuFile = menuFileId != null ? files.find(f => f.id === menuFileId) ?? null : null
@@ -128,11 +132,16 @@ export default function MFilesTab({ planner, shell }: MTabScreenProps) {
     if (isMedia(file.mime_type)) {
       // Only rows out of `visible` get here, so the file is always in mediaFiles.
       setLightboxIndex(mediaFiles.findIndex(f => f.id === file.id))
+    } else if (file.mime_type === 'application/pdf') {
+      // PDFs render in-app (MPdfLightbox) — openFile() would
+      // navigate the standalone WebView to the file and re-boot the SPA on
+      // return.
+      setPdfFile(file)
     } else {
-      // Wallet passes and everything else (PDF/docs) share the same browser-native
-      // handling as the transport/reservation file chips: openFile() opens PDFs
-      // inline (SAFE_INLINE_TYPES) and forces a download for anything unsafe
-      // (incl. .pkpass, so it reaches Apple Wallet, #1447).
+      // Wallet passes and everything else share the same browser-native
+      // handling as the transport/reservation file chips: openFile() opens
+      // safe types inline (SAFE_INLINE_TYPES) and forces a download for
+      // anything unsafe (incl. .pkpass, so it reaches Apple Wallet, #1447).
       openFile(file.url, file.original_name).catch(() => planner.toast.error(t('files.openError')))
     }
   }
@@ -220,6 +229,7 @@ export default function MFilesTab({ planner, shell }: MTabScreenProps) {
           t={t}
         />
       )}
+      {pdfFile && <MPdfLightbox file={pdfFile} onClose={() => setPdfFile(null)} t={t} />}
     </TabScroller>
   )
 }

@@ -7,6 +7,8 @@ import { openFile } from '../../../../utils/fileDownload'
 import { useTranslation } from '../../../../i18n'
 import type { Reservation } from '../../../../types'
 import MConfirmSheet from '../../settings/MConfirmSheet'
+import MPdfLightbox, { isAttachmentViewable } from './MPdfLightbox'
+import type { TripFile } from '../../../../types'
 import { ConfirmationCode, Field, SectionHeader, StatusDot, TabScroller, TravelerAvatars, TravelerFilterRow } from './tabChrome'
 import { STATUS_COLOR, type MTabScreenProps } from './tabModel'
 import {
@@ -98,6 +100,14 @@ function TransportCard({ res, planner, shell, canEdit, compact }: {
   const blurCodes = planner.settings.blur_booking_codes
   const [codeRevealed, setCodeRevealed] = useState(false)
   const [confirmDelete, setConfirmDelete] = useState(false)
+  // PDFs and raster images render in-app (MPdfLightbox) —
+  // openFile() would navigate the standalone WebView to the file and re-boot
+  // the SPA on return. Anything else keeps the browser-native handling.
+  const [pdfFile, setPdfFile] = useState<TripFile | null>(null)
+  const openAttachment = (f: TripFile) => {
+    if (isAttachmentViewable(f.mime_type)) setPdfFile(f)
+    else void openFile(f.url, f.original_name)
+  }
 
   const meta = parseTransportMeta(res)
   const TypeIcon = RES_ICONS[res.type as keyof typeof RES_ICONS] || RES_ICONS.other
@@ -265,8 +275,8 @@ function TransportCard({ res, planner, shell, canEdit, compact }: {
                       key={f.id}
                       role="button"
                       tabIndex={0}
-                      onClick={e => { e.stopPropagation(); openFile(f.url, f.original_name) }}
-                      onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); e.stopPropagation(); openFile(f.url, f.original_name) } }}
+                      onClick={e => { e.stopPropagation(); openAttachment(f) }}
+                      onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); e.stopPropagation(); openAttachment(f) } }}
                       className="flex items-center gap-[6px] rounded-[10px] border border-[color:var(--m-rowbr)] bg-m-card px-[10px] py-[7px]"
                     >
                       <FileText size={12} strokeWidth={2} className="flex-none text-m-muted" />
@@ -295,6 +305,8 @@ function TransportCard({ res, planner, shell, canEdit, compact }: {
           )
         }}
       />
+
+      {pdfFile && <MPdfLightbox file={pdfFile} onClose={() => setPdfFile(null)} t={t} />}
     </div>
   )
 }
